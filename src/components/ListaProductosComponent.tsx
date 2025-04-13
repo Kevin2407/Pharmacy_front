@@ -3,11 +3,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { classNames } from 'primereact/utils';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import ProductService  from '../services/ProductService';
+import ProductService from '../services/ProductService';
+import CategoryService from '../services/CategoryService';
+import { Category } from './ListaCategoriaComponent';
 import { Toast } from 'primereact/toast';
 import { Button } from 'primereact/button';
-import { FileUpload } from 'primereact/fileupload';
-import { Rating } from 'primereact/rating';
 import { Toolbar } from 'primereact/toolbar';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { IconField } from 'primereact/iconfield';
@@ -16,7 +16,7 @@ import { RadioButton, RadioButtonChangeEvent } from 'primereact/radiobutton';
 import { InputNumber, InputNumberValueChangeEvent } from 'primereact/inputnumber';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
-import { Tag } from 'primereact/tag';
+import { Dropdown } from 'primereact/dropdown';
 
 enum ProductType {
   GENERAL = 'GENERAL',
@@ -29,7 +29,7 @@ interface Product {
   name: string;
   price: number;
   current_stock: number;
-  category: {id:number};
+  category: { id: number };
   product_type: ProductType;
   image?: string;
   description?: string;
@@ -57,6 +57,7 @@ export default function ListaProductosComponent() {
   const [productDialog, setProductDialog] = useState<boolean>(false);
   const [deleteProductDialog, setDeleteProductDialog] = useState<boolean>(false);
   const [product, setProduct] = useState<Product>(emptyProduct);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [globalFilter, setGlobalFilter] = useState<string>('');
   const toast = useRef<Toast>(null);
@@ -65,35 +66,18 @@ export default function ListaProductosComponent() {
   useEffect((): void => {
     ProductService.findAll().then((response: { data: Product[] }) => {
       setProducts(response.data);
+
+      CategoryService.findAll().then((response: { data: Category[] }) => {
+        setCategories(response.data);
+      }).catch((error: Error) => {
+        console.error('Error fetching categories: ', error);
+      });
     }
     ).catch((error: Error) => {
       console.error('Error: ', error);
     }
     );
   }, []);
-
-  const saveProductToDatabase = (product: Product) => {
-    if (product.id) {
-      ProductService.update(product.id, product).then((response) => {
-        console.log('Product updated successfully:', response.data);
-      }).catch((error) => {
-        console.error('Error updating product:', error);
-      });
-    } else {
-      const { id, ...newProduct } = product;
-      console.log('Saving product to database:', newProduct);
-      ProductService.create(newProduct).then((response) => {
-        console.log('Product created successfully:', response.data);
-      }).catch((error) => {
-        console.error('Error creating product:', error);
-      });
-    }
-  }
-
-
-  const formatCurrency = (value: number) => {
-    return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-  };
 
   const openNew = () => {
     setProduct(emptyProduct);
@@ -123,20 +107,41 @@ export default function ListaProductosComponent() {
         _products[index] = _product;
         toast.current?.show({ severity: 'success', summary: 'Successful', detail: 'Product Updated', life: 3000 });
       } else {
-        _product.image = 'product-placeholder.svg';
         _products.push(_product);
         toast.current?.show({ severity: 'success', summary: 'Successful', detail: 'Product Created', life: 3000 });
       }
 
 
-      saveProductToDatabase(_product);
-      setProducts(_products);
+ if (_product.id) {
+      ProductService.update(_product.id, _product).then((response) => {
+        console.log('Product updated successfully:', response.data);
+        setProducts(response.data);
+      }).catch((error) => {
+        console.error('Error updating product:', error);
+        toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to update product', life: 3000 });
+      });
+    } else {
+      const { id, ...newProduct } = _product;
+      console.log('Saving product to database:', newProduct);
+      ProductService.create(newProduct).then((response) => {
+        console.log('Product created successfully:', response.data);
+        setProducts([...products, response.data]);
+      }).catch((error) => {
+        console.error('Error creating product:', error);
+        toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to create product', life: 3000 });
+      });
+    }
+      
+
+
+      
       setProductDialog(false);
       setProduct(emptyProduct);
     }
   };
 
   const editProduct = (product: Product) => {
+    console.log('Editing product:', product);
     setProduct({ ...product });
     setProductDialog(true);
   };
@@ -147,12 +152,23 @@ export default function ListaProductosComponent() {
   };
 
   const deleteProduct = () => {
-    let _products = products.filter((val) => val.id !== product.id);
-
-    setProducts(_products);
-    setDeleteProductDialog(false);
-    setProduct(emptyProduct);
-    toast.current?.show({ severity: 'success', summary: 'Successful', detail: 'Product Deleted', life: 3000 });
+    if (product.id) {
+      ProductService.delete(product.id)
+        .then(() => {
+          let _products = products.filter((val) => val.id !== product.id);
+          setProducts(_products);
+          setDeleteProductDialog(false);
+          setProduct(emptyProduct);
+          toast.current?.show({ severity: 'success', summary: 'Successful', detail: 'Product Deleted', life: 3000 });
+        })
+        .catch((error) => {
+          console.error('Error deleting product:', error);
+          toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete product', life: 3000 });
+        });
+    } else {
+      setDeleteProductDialog(false);
+      setProduct(emptyProduct);
+    }
   };
 
   const findIndexById = (id: number) => {
@@ -173,15 +189,8 @@ export default function ListaProductosComponent() {
     dt.current?.exportCSV();
   };
 
-  const onCategoryChange = (e: RadioButtonChangeEvent) => {
-    let _product = { ...product };
-
-    _product['category'] = e.value;
-    setProduct(_product);
-  };
-
-  const onInputChange = (e: React.ChangeEvent<HTMLInputElement>, name: string) => {
-    const val = (e.target && e.target.value) || '';
+  const onInputChange = (e: React.ChangeEvent<HTMLInputElement> | RadioButtonChangeEvent, name: string) => {
+    const val = (e.target && e.target.value) || (e as RadioButtonChangeEvent).value || '';
     let _product = { ...product };
 
     // @ts-ignore
@@ -212,7 +221,7 @@ export default function ListaProductosComponent() {
 
   const leftToolbarTemplate = () => {
     return (
-        <Button label="Nuevo" icon="pi pi-plus" severity="success" onClick={openNew} />
+      <Button label="Nuevo" icon="pi pi-plus" severity="success" onClick={openNew} />
     );
   };
 
@@ -228,6 +237,12 @@ export default function ListaProductosComponent() {
         <Button icon="pi pi-trash" rounded outlined severity="danger" onClick={() => confirmDeleteProduct(rowData)} />
       </React.Fragment>
     );
+  };
+
+  const categoryBodyTemplate = (rowData: Product) => {
+    const categoryId = rowData.category.id;
+    const category = categories.find(cat => cat.id === categoryId);
+    return category ? category.name : `Categoría ${categoryId}`;
   };
 
   const header = (
@@ -258,7 +273,7 @@ export default function ListaProductosComponent() {
       <Toast ref={toast} />
       <div className="card">
         <Toolbar className="mb-4" left={leftToolbarTemplate} right={rightToolbarTemplate}></Toolbar>
-        <DataTable ref={dt} value={products} 
+        <DataTable ref={dt} value={products}
           dataKey="id" paginator rows={10} rowsPerPageOptions={[5, 10, 25]}
           paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
           currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} productos" globalFilter={globalFilter} header={header}
@@ -267,27 +282,27 @@ export default function ListaProductosComponent() {
           <Column field="name" header="Nombre" sortable></Column>
           <Column field="price" header="Precio" sortable></Column>
           <Column field="current_stock" header="Stock Actual" sortable></Column>
-          <Column field="category_id" header="ID Categoria" sortable></Column>
+          <Column body={categoryBodyTemplate} field="category.id" header="Categoría" sortable></Column>
           <Column field="product_type" header="Tipo de Producto" sortable></Column>
           <Column body={actionBodyTemplate} exportable={false} style={{ minWidth: '12rem' }}></Column>
         </DataTable>
       </div>
       <Dialog visible={productDialog} style={{ width: '32rem' }} breakpoints={{ '960px': '75vw', '641px': '90vw' }} header="Detalles del Producto" modal className="p-fluid" footer={productDialogFooter} onHide={hideDialog}>
         {product.image && <img src={product.image} alt={product.name} className="product-image block m-auto pb-3 max-h-10rem" />}
-        
+
         <div className="field">
           <label htmlFor="name" className="font-bold">
             Nombre
           </label>
-          <InputText id="name" value={product.name} onChange={(e) => onInputChange(e, 'name')} required autoFocus className={classNames({ 'p-invalid': submitted && !product.name })} />
+          <InputText id="name" value={product.name} onChange={(e) => onInputChange(e, 'name')} required maxLength={100} autoFocus className={classNames({ 'p-invalid': submitted && !product.name })} />
           {submitted && !product.name && <small className="p-error">El nombre es obligatorio.</small>}
         </div>
-        
+
         <div className="field">
           <label htmlFor="description" className="font-bold">
             Descripción
           </label>
-          <InputTextarea id="description" value={product.description} onChange={(e) => onInputTextAreaChange(e, 'description')} rows={3} cols={20} />
+          <InputTextarea id="description" value={product.description} maxLength={255} onChange={(e) => onInputTextAreaChange(e, 'description')} rows={3} cols={20} />
         </div>
 
         {/* <div className="field">
@@ -317,6 +332,7 @@ export default function ListaProductosComponent() {
           <InputText
             id="image"
             value={product.image || ''}
+            maxLength={100}
             onChange={(e) => onInputChange(e, 'image')}
             placeholder="Ingrese la URL de la imagen (ej: https://ejemplo.com/imagen.jpg)"
             className="w-full mt-2"
@@ -341,13 +357,25 @@ export default function ListaProductosComponent() {
             </div>
           </div>
         </div>
-
-        <div className="formgrid grid">
-          <div className="field col">
-            <label htmlFor="category_id" className="font-bold">
-              ID de Categoría
-            </label>
-            <InputNumber id="category" value={product.category.id} onValueChange={(e) => onInputNumberChange(e, 'category')} />
+        
+        <div className="field">
+          <label htmlFor="category" className="font-bold">
+            Categoría
+          </label>
+          <div className="p-fluid">
+            <Dropdown
+              id="category"
+              value={product.category.id}
+              options={categories.map(cat => ({ label: cat.name, value: cat.id }))}
+              onChange={(e) => {
+          let _product = { ...product };
+          _product.category = { id: e.value };
+          setProduct(_product);
+              }}
+              placeholder="Seleccione una categoría"
+              className={classNames({ 'p-invalid': submitted && !product.category.id })}
+            />
+            {submitted && !product.category.id && <small className="p-error">La categoría es obligatoria.</small>}
           </div>
         </div>
 
@@ -365,14 +393,14 @@ export default function ListaProductosComponent() {
             <InputNumber id="current_stock" value={product.current_stock} onValueChange={(e) => onInputNumberChange(e, 'current_stock')} />
           </div>
         </div>
-            </Dialog>
+      </Dialog>
 
       <Dialog visible={deleteProductDialog} style={{ width: '32rem' }} breakpoints={{ '960px': '75vw', '641px': '90vw' }} header="Confirm" modal footer={deleteProductDialogFooter} onHide={hideDeleteProductDialog}>
         <div className="confirmation-content">
           <i className="pi pi-exclamation-triangle mr-3" style={{ fontSize: '2rem' }} />
           {product && (
             <span>
-              Are you sure you want to delete <b>{product.name}</b>?
+              Seguro que queres borrar <b>{product.name}</b>?
             </span>
           )}
         </div>
