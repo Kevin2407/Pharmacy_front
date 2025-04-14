@@ -1,54 +1,103 @@
-# React + TypeScript + Vite
+# Sistema de Gestión de Farmacia
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Una aplicación web moderna para la gestión de inventario de farmacias construida con React, TypeScript y componentes de interfaz PrimeReact.
 
-Currently, two official plugins are available:
+![Sistema de Gestión de Farmacia](https://on-demand-app.com/asset-ondemand/images/pharmacy_delivery_solution/hero_img.webp)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Características
 
-## Expanding the ESLint configuration
+- Gestión de productos (agregar, editar, eliminar, listar)
+- Gestión de categorías (agregar, editar, eliminar, listar)
+- Seguimiento de inventario
+- Diferentes tipos de productos (general, medicamento, medicamento con receta)
+- Interfaz de usuario responsiva
+- Funcionalidad de exportación de datos
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Tecnologías Utilizadas
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- **Frontend**: React 19, TypeScript, Vite
+- **Componentes UI**: PrimeReact, PrimeFlex, PrimeIcons
+- **Enrutamiento**: React Router
+- **Cliente HTTP**: Axios
+- **Integración API**: RESTful API
+
+## Comenzando
+
+### Requisitos Previos
+
+- Node.js (v18 o superior)
+- npm o yarn
+
+### Instalación
+
+1. Clonar el repositorio
+   ```
+   git clone https://github.com/tunombredeusuario/Pharmacy_front.git
+   cd Pharmacy_front
+   ```
+
+2. Instalar dependencias
+   ```
+   npm install
+   ```
+
+3. Configurar variables de entorno
+   Crear un archivo `.env` en el directorio raíz con el siguiente contenido:
+   ```
+   VITE_API_URL=http://localhost:8080
+   ```
+
+4. Iniciar el servidor de desarrollo
+   ```
+   npm run dev
+   ```
+
+5. Abrir el navegador y navegar a http://localhost:5173
+
+## Estructura del Proyecto
+
+```
+Pharmacy_front/
+├── public/
+├── src/
+│   ├── components/      # Componentes React
+│   ├── layout/          # Componentes de diseño
+│   ├── services/        # Clases de servicios API
+│   ├── App.tsx          # Componente principal de la aplicación
+│   └── main.tsx         # Punto de entrada de la aplicación
+├── .env                 # Variables de entorno
+├── index.html           # Plantilla HTML
+├── tsconfig.json        # Configuración de TypeScript
+└── vite.config.ts       # Configuración de Vite
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Scripts
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- `npm run dev` - Iniciar servidor de desarrollo
+- `npm run build` - Construir para producción
+- `npm run lint` - Ejecutar linting
+- `npm run preview` - Vista previa de la compilación de producción
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+## Integración de API
+
+La aplicación se conecta a una API backend para la persistencia de datos. Asegúrese de que el servidor backend esté ejecutándose en la URL especificada en su archivo `.env`.
+
+## Mejoras Futuras
+
+- Autenticación y autorización de usuarios
+- Seguimiento de ventas y transacciones
+- Informes y análisis
+- Integración de escáner de códigos de barras
+- Aplicación móvil
+
+## Contribuciones
+
+1. Hacer un fork del repositorio
+2. Crear una rama para tu función (`git checkout -b funcion/caracteristica-asombrosa`)
+3. Confirmar tus cambios (`git commit -m 'Agregar alguna característica asombrosa'`)
+4. Enviar a la rama (`git push origin funcion/caracteristica-asombrosa`)
+5. Abrir una Solicitud de Extracción
+
+## Licencia
+
+Este proyecto está licenciado bajo la Licencia MIT - ver el archivo LICENSE para más detalles.
