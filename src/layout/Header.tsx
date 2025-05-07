@@ -18,6 +18,16 @@ export default function Header() {
       icon: 'pi pi-list',
       url: '/categorias'
     },
+    {
+      label: 'Usuarios',
+      icon: 'pi pi-users',
+      url: '/usuarios'
+    },
+    {
+      label: 'Roles',
+      icon: 'pi pi-shield',
+      url: '/roles'
+    },
   ];
 
   return (
