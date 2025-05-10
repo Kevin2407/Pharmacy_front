@@ -42,7 +42,7 @@ export const CustomSidebar: React.FC<CustomSidebarProps> = ({ children }) => {
         <MobileMenu />
       )}
 
-      <div className={`content-wrapper ${collapsed ? 'sidebar-collapsed' : ''} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+      <div className={`content-wrapper ${collapsed ? 'sidebar-collapsed' : ''} ${mobileMenuOpen ? 'mobile-open' : ''} ${isMobile ? 'px-0 py-2' : 'p-0'}`}>
         {children}
       </div>
     </>
