@@ -1,8 +1,6 @@
-import { Menubar } from 'primereact/menubar';
 import { MenuItem } from 'primereact/menuitem';
 
-export default function Header() {
-  const items: MenuItem[] = [
+export const menuItems: MenuItem[] = [
     {
       label: 'Inicio',
       icon: 'pi pi-home',
@@ -29,10 +27,3 @@ export default function Header() {
       url: '/roles'
     },
   ];
-
-  return (
-    <div className="card">
-      <Menubar model={items} />
-    </div>
-  )
-}

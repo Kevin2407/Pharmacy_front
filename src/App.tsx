@@ -1,17 +1,18 @@
 import './App.css';
 import { PrimeReactProvider } from 'primereact/api';
-import Header from './layout/Header';
 import ListaProductosComponent from './components/ListaProductosComponent'
 import ListaCategoriaComponent from './components/ListaCategoriaComponent';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import ListaUsuarios from './components/ListaUsuarios';
 import ListaRolesComponent from './components/ListaRolesComponent';
+import { CustomSidebar } from './layout/CustomSidebar';
+
 
 function App() {
 
   return (
     <PrimeReactProvider>
-      <Header />
+      <CustomSidebar>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<h1>Welcome to the App</h1>} />
@@ -21,6 +22,7 @@ function App() {
           <Route path="/roles" element={<ListaRolesComponent />} />
         </Routes>
       </BrowserRouter>
+      </CustomSidebar>
     </PrimeReactProvider>
   )
 }

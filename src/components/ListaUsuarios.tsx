@@ -15,7 +15,6 @@ import { Dropdown } from 'primereact/dropdown';
 import { Role } from './ListaRolesComponent';
 import UserService from '../services/UserService';
 import RoleService from '../services/RoleService';
-import { ColumnGroup } from 'primereact/columngroup';
 
 interface User {
   id?: number;
