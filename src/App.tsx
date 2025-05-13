@@ -1,11 +1,12 @@
 import './App.css';
 import { PrimeReactProvider } from 'primereact/api';
-import ListaProductosComponent from './components/ListaProductosComponent'
-import ListaCategoriaComponent from './components/ListaCategoriaComponent';
+import ListaProductosComponent from './pages/Productos'
+import ListaCategoriaComponent from './pages/Categoria';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import ListaUsuarios from './components/ListaUsuarios';
-import ListaRolesComponent from './components/ListaRolesComponent';
+import ListaUsuarios from './pages/Usuarios';
+import ListaRolesComponent from './pages/Roles';
 import { CustomSidebar } from './layout/CustomSidebar';
+import Inicio from './pages/Inicio';
 
 
 function App() {
@@ -15,7 +16,7 @@ function App() {
       <CustomSidebar>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<h1>Welcome to the App</h1>} />
+          <Route path="/" element={<Inicio/>} />
           <Route path="/productos" element={<ListaProductosComponent />} />
           <Route path="/categorias" element={<ListaCategoriaComponent />} />
           <Route path="/usuarios" element={<ListaUsuarios />} />

@@ -12,7 +12,7 @@ import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Password } from 'primereact/password';
 import { Dropdown } from 'primereact/dropdown';
-import { Role } from './ListaRolesComponent';
+import { Role } from './Roles';
 import UserService from '../services/UserService';
 import RoleService from '../services/RoleService';
 

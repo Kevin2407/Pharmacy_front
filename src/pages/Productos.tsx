@@ -5,7 +5,7 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import ProductService from '../services/ProductService';
 import CategoryService from '../services/CategoryService';
-import { Category } from './ListaCategoriaComponent';
+import { Category } from './Categoria';
 import { Toast } from 'primereact/toast';
 import { Button } from 'primereact/button';
 import { Toolbar } from 'primereact/toolbar';
