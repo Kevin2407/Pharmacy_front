@@ -17,6 +17,8 @@ import { InputNumber, InputNumberValueChangeEvent } from 'primereact/inputnumber
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
+import { Skeleton } from 'primereact/skeleton';
+
 
 enum ProductType {
   GENERAL = 'GENERAL',
@@ -58,23 +60,26 @@ export default function ListaProductosComponent() {
   const [deleteProductDialog, setDeleteProductDialog] = useState<boolean>(false);
   const [product, setProduct] = useState<Product>(emptyProduct);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [globalFilter, setGlobalFilter] = useState<string>('');
   const toast = useRef<Toast>(null);
   const dt = useRef<DataTable<Product[]>>(null);
 
   useEffect((): void => {
+    setLoading(true);
     ProductService.findAll().then((response: { data: Product[] }) => {
       setProducts(response.data);
 
       CategoryService.findAll().then((response: { data: Category[] }) => {
         setCategories(response.data);
+        setLoading(false);
       }).catch((error: Error) => {
         console.error('Error fetching categories: ', error);
       });
     }
     ).catch((error: Error) => {
-      console.error('Error: ', error);
+      console.error('Error fetching products: ', error);
     }
     );
   }, []);
@@ -269,6 +274,9 @@ export default function ListaProductosComponent() {
 
 
   return (
+    <>
+      {loading && <SkeletonLoader />}
+      {!loading && (
     <div>
       <Toast ref={toast} />
       <div className="card">
@@ -408,6 +416,8 @@ export default function ListaProductosComponent() {
 
 
     </div>
+      )}
+    </>
   );
 }
 
@@ -415,3 +425,23 @@ export default function ListaProductosComponent() {
 
 
 
+
+
+
+
+function SkeletonLoader() {
+  const items: number[] = Array.from({ length: 5 }, (v, i) => i);
+
+  return (
+    <div className="card">
+      <Skeleton height="5rem" className="mb-2"></Skeleton>
+      <Skeleton height="5rem" className="mb-2"></Skeleton>
+      <DataTable value={items} className="p-datatable-striped mt-0">
+        <Column style={{ width: '25%' }} body={<Skeleton />}></Column>
+        <Column style={{ width: '25%' }} body={<Skeleton />}></Column>
+        <Column style={{ width: '25%' }} body={<Skeleton />}></Column>
+        <Column style={{ width: '25%' }} body={<Skeleton />}></Column>
+      </DataTable>
+    </div>
+  );
+}
