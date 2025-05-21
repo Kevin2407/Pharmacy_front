@@ -15,6 +15,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { Role } from './Roles';
 import UserService from '../services/UserService';
 import RoleService from '../services/RoleService';
+import { findIndexById } from '../utils';
 
 interface User {
   id?: number;
@@ -98,7 +99,7 @@ export default function ListaUsuarios() {
       let _user = { ...user };
 
       if (user.id) {
-        const index = findIndexById(user.id);
+        const index = findIndexById(user.id, users);
 
         _users[index] = _user;
         
@@ -151,17 +152,6 @@ export default function ListaUsuarios() {
           toast.current?.show({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar el usuario', life: 3000 });
         });
     }
-  };
-
-  const findIndexById = (id: number) => {
-    let index = -1;
-    for (let i = 0; i < users.length; i++) {
-      if (users[i].id === id) {
-        index = i;
-        break;
-      }
-    }
-    return index;
   };
 
   const exportCSV = () => {

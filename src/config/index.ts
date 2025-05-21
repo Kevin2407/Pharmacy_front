@@ -7,6 +7,27 @@ export const menuItems: MenuItem[] = [
       url: '/'
     },
     {
+      label: 'Stock',
+      icon: 'pi pi-box',
+      url: '/productos/stock'
+    },
+    {
+      label: 'Configuración',
+      icon: 'pi pi-cog',
+      items: [
+        {
+          label: 'Usuarios',
+          icon: 'pi pi-users',
+          url: '/usuarios'
+        },
+        {
+          label: 'Roles',
+          icon: 'pi pi-shield',
+          url: '/roles'
+        }
+      ]
+    },
+    {
       label: 'Productos',
       icon: 'pi pi-barcode',
       url: '/productos'

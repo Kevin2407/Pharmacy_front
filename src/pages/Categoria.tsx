@@ -13,6 +13,8 @@ import { InputIcon } from 'primereact/inputicon';
 import { RadioButtonChangeEvent } from 'primereact/radiobutton';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
+import SkeletonLoader from '../components/SkeletonLoader';
+import { findIndexById } from '../utils';
 
 
 export interface Category {
@@ -35,17 +37,18 @@ export default function ListaCategoriaComponent() {
   const [category, setCategory] = useState<Category>(emptyCategory);
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [globalFilter, setGlobalFilter] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
   const toast = useRef<Toast>(null);
   const dt = useRef<DataTable<Category[]>>(null);
 
   useEffect((): void => {
+    setLoading(true);
     CategoryService.findAll().then((response: { data: Category[] }) => {
       setCategories(response.data);
-    }
-    ).catch((error: Error) => {
+      setLoading(false);
+    }).catch((error: Error) => {
       console.error('Error: ', error);
-    }
-    );
+    });
   }, []);
 
   const saveCategoryToDatabase = (category: Category) => {
@@ -90,7 +93,7 @@ export default function ListaCategoriaComponent() {
       let _category = { ...category };
 
       if (category.id) {
-        const index = findIndexById(category.id);
+        const index = findIndexById(category.id, categories);
 
         _categories[index] = _category;
         toast.current?.show({ severity: 'success', summary: 'Successful', detail: 'Category Updated', life: 3000 });
@@ -136,19 +139,6 @@ export default function ListaCategoriaComponent() {
       setDeleteCategoryDialog(false);
       setCategory(emptyCategory);
     }
-  };
-
-  const findIndexById = (id: number) => {
-    let index = -1;
-
-    for (let i = 0; i < categories.length; i++) {
-      if (categories[i].id === id) {
-        index = i;
-        break;
-      }
-    }
-
-    return index;
   };
 
 
@@ -220,51 +210,56 @@ export default function ListaCategoriaComponent() {
 
 
   return (
-    <div>
-      <Toast ref={toast} />
-      <div className="card">
-        <Toolbar className="mb-4" left={leftToolbarTemplate} right={rightToolbarTemplate}></Toolbar>
-        <DataTable ref={dt} value={categories}
-          dataKey="id" paginator rows={10} rowsPerPageOptions={[5, 10, 25]}
-          paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} categoryos" globalFilter={globalFilter} header={header}
-        >
-          <Column field="id" header="ID" sortable></Column>
-          <Column field="name" header="Nombre" sortable></Column>
-          <Column field="description" header="Descripción" sortable></Column>
-          <Column body={actionBodyTemplate} exportable={false} style={{ minWidth: '8rem' }}></Column>
-        </DataTable>
-      </div>
-      <Dialog visible={categoryDialog} style={{ width: '32rem' }} breakpoints={{ '960px': '75vw', '641px': '90vw' }} header="Detalles del Categoryo" modal className="p-fluid" footer={categoryDialogFooter} onHide={hideDialog}>
-        <div className="field">
-          <label htmlFor="name" className="font-bold">
-            Nombre
-          </label>
-          <InputText id="name" value={category.name} maxLength={15} onChange={(e) => onInputChange(e, 'name')} required autoFocus className={classNames({ 'p-invalid': submitted && !category.name })} />
-          {submitted && !category.name && <small className="p-error">El nombre es obligatorio.</small>}
-        </div>
+    <>
+      {loading && (
+        <SkeletonLoader />
+      )}
+      {!loading && (
+        <>
+          <Toast ref={toast} />
+          <div className="card">
+            <Toolbar className="mb-4" left={leftToolbarTemplate} right={rightToolbarTemplate}></Toolbar>
+            <DataTable ref={dt} value={categories}
+              dataKey="id" paginator rows={10} rowsPerPageOptions={[5, 10, 25]}
+              paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+              currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} categoryos" globalFilter={globalFilter} header={header}
+            >
+              <Column field="id" header="ID" sortable></Column>
+              <Column field="name" header="Nombre" sortable></Column>
+              <Column field="description" header="Descripción" sortable></Column>
+              <Column body={actionBodyTemplate} exportable={false} style={{ minWidth: '8rem' }}></Column>
+            </DataTable>
+          </div>
+          <Dialog visible={categoryDialog} style={{ width: '32rem' }} breakpoints={{ '960px': '75vw', '641px': '90vw' }} header="Detalles del Categoryo" modal className="p-fluid" footer={categoryDialogFooter} onHide={hideDialog}>
+            <div className="field">
+              <label htmlFor="name" className="font-bold">
+                Nombre
+              </label>
+              <InputText id="name" value={category.name} maxLength={15} onChange={(e) => onInputChange(e, 'name')} required autoFocus className={classNames({ 'p-invalid': submitted && !category.name })} />
+              {submitted && !category.name && <small className="p-error">El nombre es obligatorio.</small>}
+            </div>
 
-        <div className="field">
-          <label htmlFor="description" className="font-bold">
-            Descripción
-          </label>
-          <InputTextarea id="description" maxLength={255} value={category.description} onChange={(e) => onInputTextAreaChange(e, 'description')} rows={3} cols={20} />
-        </div>
-      </Dialog>
+            <div className="field">
+              <label htmlFor="description" className="font-bold">
+                Descripción
+              </label>
+              <InputTextarea id="description" maxLength={255} value={category.description} onChange={(e) => onInputTextAreaChange(e, 'description')} rows={3} cols={20} />
+            </div>
+          </Dialog>
 
-      <Dialog visible={deleteCategoryDialog} style={{ width: '32rem' }} breakpoints={{ '960px': '75vw', '641px': '90vw' }} header="Confirm" modal footer={deleteCategoryDialogFooter} onHide={hideDeleteCategoryDialog}>
-        <div className="confirmation-content">
-          <i className="pi pi-exclamation-triangle mr-3" style={{ fontSize: '2rem' }} />
-          {category && (
-            <span>
-              Seguro que queres borrar <b>{category.name}</b>?
-            </span>
-          )}
-        </div>
-      </Dialog>
-
-
-    </div>
+          <Dialog visible={deleteCategoryDialog} style={{ width: '32rem' }} breakpoints={{ '960px': '75vw', '641px': '90vw' }} header="Confirm" modal footer={deleteCategoryDialogFooter} onHide={hideDeleteCategoryDialog}>
+            <div className="confirmation-content">
+              <i className="pi pi-exclamation-triangle mr-3" style={{ fontSize: '2rem' }} />
+              {category && (
+                <span>
+                  Seguro que queres borrar <b>{category.name}</b>?
+                </span>
+              )}
+            </div>
+          </Dialog>
+        </>)
+      }
+    </>
   );
 }
 

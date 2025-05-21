@@ -1,9 +1,13 @@
 import { Button } from 'primereact/button';
 import { menuItems } from '../config';
 import './customSidebar.css';
-
+import { TieredMenu } from 'primereact/tieredmenu';
+import { useRef } from 'react';
+import { MenuItem } from 'primereact/menuitem';
+import { IconField } from 'primereact/iconfield';
 
 export default function DesktopMenu({ collapsed, toggleCollapse }: { collapsed: boolean; toggleCollapse: () => void }) {
+  const menu = useRef<TieredMenu>(null);
 
   return (
     <>
@@ -18,13 +22,30 @@ export default function DesktopMenu({ collapsed, toggleCollapse }: { collapsed: 
             {
               menuItems.map((item, index) => (
                 <li key={index}>
-                  <Button
-                    label={collapsed ? "" : item.label}
-                    icon={item.icon}
-                    iconPos={collapsed ? "right" : "left"}
-                    onClick={() => item.url && (window.location.href = item.url)}
-                    className='justify-content-center py-1.5'
-                  />
+                  {
+                    item.items ? (
+                      <>
+                        <TieredMenu model={item.items as MenuItem[]} popup ref={menu} breakpoint="767px" />
+                        <Button
+                          label={collapsed ? "" : item.label}
+                          icon={item.icon}
+                          iconPos={collapsed ? "right" : "left"}
+                          className='justify-content-center py-1.5'
+                          onClick={(e) => menu?.current?.toggle(e)} 
+                          >
+                          {collapsed ? "" : <span className="pi pi-chevron-down"></span>}
+                          </Button>
+                      </>
+                    ) : (
+                      <Button
+                        label={collapsed ? "" : item.label}
+                        icon={item.icon}
+                        iconPos={collapsed ? "right" : "left"}
+                        onClick={() => item.url && (window.location.href = item.url)}
+                        className='justify-content-center py-1.5'
+                      />
+                    )
+                  }
                 </li>
               ))
             }

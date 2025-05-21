@@ -25,6 +25,12 @@ class ProductService {
     return await axios.delete(`${URL_BASE}/producto/${id}`);
   }
 
+  async findAllStockProducts() {
+    const response = await axios.get(`${URL_BASE}/producto/stock`);
+    console.log("STOCK DATA", response);
+    return response;
+  }
+
 }
 
 export default new ProductService();

@@ -7,6 +7,7 @@ import ListaUsuarios from './pages/Usuarios';
 import ListaRolesComponent from './pages/Roles';
 import { CustomSidebar } from './layout/CustomSidebar';
 import Inicio from './pages/Inicio';
+import ListaStock from './pages/Stock';
 
 
 function App() {
@@ -14,15 +15,16 @@ function App() {
   return (
     <PrimeReactProvider>
       <CustomSidebar>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Inicio/>} />
-          <Route path="/productos" element={<ListaProductosComponent />} />
-          <Route path="/categorias" element={<ListaCategoriaComponent />} />
-          <Route path="/usuarios" element={<ListaUsuarios />} />
-          <Route path="/roles" element={<ListaRolesComponent />} />
-        </Routes>
-      </BrowserRouter>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Inicio />} />
+            <Route path="/productos" element={<ListaProductosComponent />} />
+            <Route path="/categorias" element={<ListaCategoriaComponent />} />
+            <Route path="/usuarios" element={<ListaUsuarios />} />
+            <Route path="/roles" element={<ListaRolesComponent />} />
+            <Route path="/productos/stock" element={<ListaStock />} />
+          </Routes>
+        </BrowserRouter>
       </CustomSidebar>
     </PrimeReactProvider>
   )

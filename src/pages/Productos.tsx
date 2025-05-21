@@ -17,8 +17,8 @@ import { InputNumber, InputNumberValueChangeEvent } from 'primereact/inputnumber
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
-import { Skeleton } from 'primereact/skeleton';
-
+import SkeletonLoader from '../components/SkeletonLoader';
+import { findIndexById } from '../utils';
 
 enum ProductType {
   GENERAL = 'GENERAL',
@@ -107,7 +107,7 @@ export default function ListaProductosComponent() {
       let _product = { ...product };
 
       if (product.id) {
-        const index = findIndexById(product.id);
+        const index = findIndexById(product.id, products);
 
         _products[index] = _product;
         toast.current?.show({ severity: 'success', summary: 'Successful', detail: 'Product Updated', life: 3000 });
@@ -174,19 +174,6 @@ export default function ListaProductosComponent() {
       setDeleteProductDialog(false);
       setProduct(emptyProduct);
     }
-  };
-
-  const findIndexById = (id: number) => {
-    let index = -1;
-
-    for (let i = 0; i < products.length; i++) {
-      if (products[i].id === id) {
-        index = i;
-        break;
-      }
-    }
-
-    return index;
   };
 
 
@@ -429,19 +416,3 @@ export default function ListaProductosComponent() {
 
 
 
-function SkeletonLoader() {
-  const items: number[] = Array.from({ length: 5 }, (v, i) => i);
-
-  return (
-    <div className="card">
-      <Skeleton height="5rem" className="mb-2"></Skeleton>
-      <Skeleton height="5rem" className="mb-2"></Skeleton>
-      <DataTable value={items} className="p-datatable-striped mt-0">
-        <Column style={{ width: '25%' }} body={<Skeleton />}></Column>
-        <Column style={{ width: '25%' }} body={<Skeleton />}></Column>
-        <Column style={{ width: '25%' }} body={<Skeleton />}></Column>
-        <Column style={{ width: '25%' }} body={<Skeleton />}></Column>
-      </DataTable>
-    </div>
-  );
-}
