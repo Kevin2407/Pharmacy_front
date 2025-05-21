@@ -2,12 +2,13 @@ import { Button } from 'primereact/button';
 import { menuItems } from '../config';
 import './customSidebar.css';
 import { TieredMenu } from 'primereact/tieredmenu';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { MenuItem } from 'primereact/menuitem';
 import { IconField } from 'primereact/iconfield';
 
 export default function DesktopMenu({ collapsed, toggleCollapse }: { collapsed: boolean; toggleCollapse: () => void }) {
   const menu = useRef<TieredMenu>(null);
+  const [subMenuOpen, setSubMenuOpen] = useState(false);
 
   return (
     <>
@@ -31,9 +32,13 @@ export default function DesktopMenu({ collapsed, toggleCollapse }: { collapsed: 
                           icon={item.icon}
                           iconPos={collapsed ? "right" : "left"}
                           className='justify-content-center py-1.5'
-                          onClick={(e) => menu?.current?.toggle(e)} 
+                          onClick={(e) => {
+                            menu?.current?.toggle(e)
+                            setSubMenuOpen(!subMenuOpen); 
+                          }} 
                           >
-                          {collapsed ? "" : <span className="pi pi-chevron-down"></span>}
+                          {!collapsed && !subMenuOpen ? <span className="pi pi-chevron-down"></span> : ""}
+                          {!collapsed && subMenuOpen ? <span className="pi pi-chevron-up"></span> : "" }
                           </Button>
                       </>
                     ) : (

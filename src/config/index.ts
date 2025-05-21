@@ -16,6 +16,16 @@ export const menuItems: MenuItem[] = [
       icon: 'pi pi-cog',
       items: [
         {
+          label: 'Productos',
+          icon: 'pi pi-barcode',
+          url: '/productos'
+        },
+        {
+          label: 'Categorias',
+          icon: 'pi pi-list',
+          url: '/categorias'
+        },
+        {
           label: 'Usuarios',
           icon: 'pi pi-users',
           url: '/usuarios'
@@ -26,25 +36,5 @@ export const menuItems: MenuItem[] = [
           url: '/roles'
         }
       ]
-    },
-    {
-      label: 'Productos',
-      icon: 'pi pi-barcode',
-      url: '/productos'
-    },
-    {
-      label: 'Categorias',
-      icon: 'pi pi-list',
-      url: '/categorias'
-    },
-    {
-      label: 'Usuarios',
-      icon: 'pi pi-users',
-      url: '/usuarios'
-    },
-    {
-      label: 'Roles',
-      icon: 'pi pi-shield',
-      url: '/roles'
     },
   ];
