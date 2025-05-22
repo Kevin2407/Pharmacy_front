@@ -44,7 +44,7 @@ interface PaymentMethod {
 interface NewMovementModalProps {
   visible: boolean;
   onHide: () => void;
-  type: 'purchase' | 'sale';
+  type: 'purchase' | 'sale' | 'adjustment' | 'return';
   onSave: (items: MovementItem[], additionalInfo: any) => void;
   providers?: Provider[];
   paymentMethods?: PaymentMethod[];
@@ -323,7 +323,10 @@ export default function NewMovementModal({
 
   return (
     <Dialog
-      header={type === 'purchase' ? "Nueva Compra" : "Nueva Venta"}
+      header={type === 'purchase' ? "Nueva entrada de medicamentos"
+        : type === 'sale' ? "Nueva Venta"
+          : type === 'adjustment' ? "Ajuste de Stock (resta)"
+            : "Devolución"}
       visible={visible}
       style={{ width: '90vw', maxWidth: '1200px' }}
       modal
@@ -336,7 +339,7 @@ export default function NewMovementModal({
       }}>
       <div className="card">
         {loading ? (
-            <SkeletonLoader rows={1} />
+          <SkeletonLoader rows={1} />
         ) : (
           <>
             {header}
@@ -352,6 +355,11 @@ export default function NewMovementModal({
               emptyMessage="No hay productos agregados"
               scrollable
             >
+              <Column
+                field="product_id"
+                header="ID"
+                body={(rowData) => renderInputText(rowData, 'product_id')}
+              />
               <Column
                 field="product_name"
                 header="Producto"
@@ -370,23 +378,23 @@ export default function NewMovementModal({
               />
 
               {type === 'purchase' && (
-                <>
                   <Column
                     field="expiration_date"
                     header="Fecha Exp."
                     body={renderCalendar}
                     style={{ width: '150px' }}
                   />
+              )}
+              {type === 'purchase' && (
                   <Column
                     field="batch_number"
                     header="No. Lote"
                     body={(rowData) => renderInputText(rowData, 'batch_number')}
                     style={{ width: '120px' }}
                   />
-                </>
               )}
 
-              {type === 'sale' && (
+              {type === 'sale' && ( 
                 <Column
                   field="price"
                   header="Precio"

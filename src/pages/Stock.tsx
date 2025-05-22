@@ -42,7 +42,11 @@ export default function ListaStock() {
   };
 
   const [stockProducts, setStockProducts] = useState<StockProduct[]>([]);
-  const [visible, setVisible] = useState<boolean>(false);
+  const [visiblePurchase, setVisiblePurchase] = useState<boolean>(false);
+  const [visibleSale, setVisibleSale] = useState<boolean>(false);
+  const [visibleAdjustment, setVisibleAdjustment] = useState<boolean>(false);
+  const [visibleReturn, setVisibleReturn] = useState<boolean>(false);
+
 
   const [stockProduct, setStockProduct] = useState<StockProduct>(emptyProduct);
   const [loading, setLoading] = useState<boolean>(true);
@@ -70,15 +74,25 @@ export default function ListaStock() {
 
   const leftToolbarTemplate = () => {
     return (
-      <Button
-        label="Nuevo"
-        icon="pi pi-plus"
-        severity="success"
-        onClick={() => {
-          setStockProduct(emptyProduct);
-          setSubmitted(false);
-          setVisible(true);
-        }} />
+      <div className="flex gap-2">
+        <Button
+          label="Nueva Venta"
+          severity="success"
+          onClick={() => {
+            setStockProduct(emptyProduct);
+            setSubmitted(false);
+            setVisibleSale(true);
+          }} />
+        <Button
+          label="Nueva Entrada"
+          severity="warning"
+          onClick={() => {
+            setStockProduct(emptyProduct);
+            setSubmitted(false);
+            setVisiblePurchase(true);
+          }} />
+
+      </div>
     );
   };
 
@@ -90,8 +104,26 @@ export default function ListaStock() {
   const actionBodyTemplate = (rowData: StockProduct) => {
     return (
       <React.Fragment>
-        <Button icon="pi pi-plus" rounded outlined className="mr-2" onClick={() => console.log("pepe")} />
-        <Button icon="pi pi-minus" rounded outlined severity="danger" onClick={() => console.log("pepe")} />
+        <Button
+          icon="pi pi-plus"
+          rounded
+          outlined
+          className="mr-2"
+          onClick={() => {
+            setStockProduct(emptyProduct);
+            setSubmitted(false);
+            setVisibleReturn(true);
+          }} />
+        <Button
+          icon="pi pi-minus"
+          rounded
+          outlined
+          severity="danger"
+          onClick={() => {
+            setStockProduct(emptyProduct);
+            setSubmitted(false);
+            setVisibleAdjustment(true);
+          }} />
       </React.Fragment>
     );
   };
@@ -129,11 +161,30 @@ export default function ListaStock() {
             </DataTable>
           </div>
           <NewMovementModal
-            visible={visible}
-            onHide={() => setVisible(false)}
+            visible={visiblePurchase}
+            onHide={() => setVisiblePurchase(false)}
             type="purchase"
-            onSave={() => {console.log("pachi")}}
-            providers={[{id:1,name: "pachi"}, {id:2,name: "pepe"}]}
+            onSave={() => { console.log("pachi") }}
+            providers={[{ id: 1, name: "pachi" }, { id: 2, name: "pepe" }]}
+          />
+          <NewMovementModal
+            visible={visibleSale}
+            onHide={() => setVisibleSale(false)}
+            type="sale"
+            onSave={() => { console.log("pachi") }}
+            paymentMethods={[{ id: 1, name: "pachi" }, { id: 2, name: "pepe" }]}
+          />
+          <NewMovementModal
+            visible={visibleAdjustment}
+            onHide={() => setVisibleAdjustment(false)}
+            type="adjustment"
+            onSave={() => { console.log("pachi") }}
+          />
+          <NewMovementModal
+            visible={visibleReturn}
+            onHide={() => setVisibleReturn(false)}
+            type="return"
+            onSave={() => { console.log("pachi") }}
           />
         </div>
       )}
