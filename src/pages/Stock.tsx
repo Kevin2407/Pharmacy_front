@@ -10,9 +10,6 @@ import { Toolbar } from 'primereact/toolbar';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { IconField } from 'primereact/iconfield';
 import { InputIcon } from 'primereact/inputicon';
-import { RadioButtonChangeEvent } from 'primereact/radiobutton';
-import { InputNumber, InputNumberValueChangeEvent } from 'primereact/inputnumber';
-import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import SkeletonLoader from '../components/SkeletonLoader';
 import NewMovementModal from '../components/NewMovementModal';
@@ -22,7 +19,7 @@ interface StockProduct {
   id?: number;
   name: string;
   price: number;
-  stock: number;
+  stock?: number;
   description?: string;
   created_at?: Date;
   updated_at?: Date;
@@ -46,9 +43,11 @@ export default function ListaStock() {
   const [visibleSale, setVisibleSale] = useState<boolean>(false);
   const [visibleAdjustment, setVisibleAdjustment] = useState<boolean>(false);
   const [visibleReturn, setVisibleReturn] = useState<boolean>(false);
+  const [visible, setVisible] = useState<boolean>(visiblePurchase||visibleSale||visibleAdjustment||visibleReturn);
 
 
   const [stockProduct, setStockProduct] = useState<StockProduct>(emptyProduct);
+  const [productsToChoose, setProductsToChoose] = useState<StockProduct[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [submitted, setSubmitted] = useState<boolean>(false); //para validacion de formulario
   const [globalFilter, setGlobalFilter] = useState<string>('');
@@ -60,6 +59,13 @@ export default function ListaStock() {
     ProductService.findAllStockProducts()
       .then((response: { data: StockProduct[] }) => {
         setStockProducts(response.data);
+        setProductsToChoose(response.data.map((product: StockProduct) => ({
+          id: product.id!,
+          name: product.name,
+          description: product.description || '',
+          price: product.price,
+          stock: product.stock
+        })));
         setLoading(false);
       }
       ).catch((error: Error) => {
@@ -68,9 +74,29 @@ export default function ListaStock() {
       );
   }, []);
 
+  useEffect(() => {
+    const isAnyModalOpen = visiblePurchase || visibleSale || visibleAdjustment || visibleReturn;
+
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [visiblePurchase, visibleSale, visibleAdjustment, visibleReturn]);
+
   const exportCSV = () => {
     dt.current?.exportCSV();
   };
+
+  const saveMovement = (items: any[], additionalInfo: any) => {
+    setSubmitted(true);
+    console.log(items)
+    console.log(additionalInfo)
+  }
 
   const leftToolbarTemplate = () => {
     return (
@@ -106,6 +132,8 @@ export default function ListaStock() {
       <React.Fragment>
         <Button
           icon="pi pi-plus"
+          tooltip="Devolución de producto"
+          tooltipOptions={{ position: 'top' }}
           rounded
           outlined
           className="mr-2"
@@ -116,6 +144,8 @@ export default function ListaStock() {
           }} />
         <Button
           icon="pi pi-minus"
+          tooltip="Ajuste de cantidad"
+          tooltipOptions={{ position: 'top' }}
           rounded
           outlined
           severity="danger"
@@ -137,8 +167,6 @@ export default function ListaStock() {
       </IconField>
     </div>
   );
-
-
 
   return (
     <>
@@ -164,27 +192,31 @@ export default function ListaStock() {
             visible={visiblePurchase}
             onHide={() => setVisiblePurchase(false)}
             type="purchase"
-            onSave={() => { console.log("pachi") }}
+            onSave={saveMovement}
             providers={[{ id: 1, name: "pachi" }, { id: 2, name: "pepe" }]}
+            productsToChoose={productsToChoose}
           />
           <NewMovementModal
             visible={visibleSale}
             onHide={() => setVisibleSale(false)}
             type="sale"
-            onSave={() => { console.log("pachi") }}
+            onSave={saveMovement}
             paymentMethods={[{ id: 1, name: "pachi" }, { id: 2, name: "pepe" }]}
+            productsToChoose={productsToChoose}
           />
           <NewMovementModal
             visible={visibleAdjustment}
             onHide={() => setVisibleAdjustment(false)}
             type="adjustment"
-            onSave={() => { console.log("pachi") }}
+            onSave={saveMovement}
+            productsToChoose={productsToChoose}
           />
           <NewMovementModal
             visible={visibleReturn}
             onHide={() => setVisibleReturn(false)}
             type="return"
-            onSave={() => { console.log("pachi") }}
+            onSave={saveMovement}
+            productsToChoose={productsToChoose}
           />
         </div>
       )}

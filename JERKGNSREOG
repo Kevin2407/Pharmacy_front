@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode, useRef } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { Dialog } from 'primereact/dialog';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
@@ -7,10 +7,10 @@ import { InputText } from 'primereact/inputtext';
 import { InputNumber } from 'primereact/inputnumber';
 import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
+import { IconField } from 'primereact/iconfield';
+import { InputIcon } from 'primereact/inputicon';
 import SkeletonLoader from './SkeletonLoader';
 import ProductSearcher from './ProductSearcher';
-import { Toast } from 'primereact/toast';
-import { Tooltip } from 'primereact/tooltip';
 
 interface Product {
   id: number;
@@ -29,6 +29,7 @@ interface MovementItem {
   price?: number;
   expiration_date?: Date | null;
   batch_number?: string;
+  isNewRow?: boolean;
 }
 
 interface Provider {
@@ -62,12 +63,24 @@ export default function NewMovementModal({
 }: NewMovementModalProps) {
   const [submitted, setSubmitted] = useState(false);
   const [items, setItems] = useState<MovementItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const toast = useRef<Toast>(null);
+
+  const emptyItem: MovementItem = {
+    product_id: 0,
+    product_name: '',
+    description: '',
+    quantity: 1,
+    price: type === 'sale' ? 0 : undefined,
+    expiration_date: type === 'purchase' ? null : undefined,
+    batch_number: type === 'purchase' ? '' : undefined
+  };
+
+  const [newRow, setNewRow] = useState<MovementItem>(emptyItem);
 
   useEffect(() => {
     if (visible) {
@@ -76,6 +89,7 @@ export default function NewMovementModal({
 
       setTimeout(() => {
         try {
+          // ProductService.getAll().then(data => setProducts(data))
           setProducts([]);
           setLoading(false);
         } catch (err) {
@@ -90,164 +104,113 @@ export default function NewMovementModal({
 
   const resetForm = () => {
     setItems([]);
+    setNewRow(emptyItem);
     setSelectedProvider(null);
     setSelectedPaymentMethod(null);
+    setSearchTerm('');
     setSubmitted(false);
     setError(null);
   };
 
-  const handleProductSelection = (
-    allSelected: { id: number; name: string; price: number; description: string }[],
-    added: { id: number; name: string; price: number; description: string }[],
-    removed: { id: number; name: string; price: number; description: string }[]
-  ) => {
-    console.log(added)
-    if (added.length > 0) {
-      const newItems = added.map(product => ({
-        id: Date.now() + product.id, // Generate a unique ID
-        product_id: product.id,
-        product_name: product.name,
-        description: product.description,
-        quantity: 1,
-        price: type === 'sale' ? product.price : undefined,
-        expiration_date: type === 'purchase' ? null : undefined,
-        batch_number: type === 'purchase' ? '' : undefined
-      }));
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    setLoading(true);
 
-      setItems(prevItems => [...prevItems, ...newItems]);
-
-      if (added.length === 1) {
-        toast.current?.show({
-          severity: 'success',
-          summary: 'Producto agregado',
-          detail: added[0].name,
-          life: 3000
-        });
-      } else {
-        toast.current?.show({
-          severity: 'success',
-          summary: 'Productos agregados',
-          detail: `${added.length} productos agregados`,
-          life: 3000
-        });
+    setTimeout(() => {
+      try {
+        // ProductService.search(term).then(data => setProducts(data))
+        setLoading(false);
+      } catch (err) {
+        setError('Error en la búsqueda');
+        setLoading(false);
       }
-    }
+    }, 300);
+  };
 
-    if (removed.length > 0) {
-      const updatedItems = items.filter(item =>
-        !removed.some(p => p.id === item.product_id)
-      );
-      setItems(updatedItems);
-
-      if (removed.length === 1) {
-        toast.current?.show({
-          severity: 'warn',
-          summary: 'Producto eliminado',
-          detail: removed[0].name,
-          life: 3000
-        });
-      } else {
-        toast.current?.show({
-          severity: 'warn',
-          summary: 'Productos eliminados',
-          detail: `${removed.length} productos eliminados`,
-          life: 3000
-        });
-      }
+  const addNewRow = () => {
+    console.log(items);
+    if (newRow.product_name.trim()) {
+      setItems([...items, { ...newRow, id: Date.now() }]);
+      setNewRow(emptyItem);
+    } else {
+      setError('El nombre del producto es requerido');
     }
   };
 
+  const handleInputChange = (field: keyof MovementItem, value: any) => {
+    setNewRow({ ...newRow, [field]: value });
+  };
+
   const handleQuantityChange = (rowData: MovementItem, quantity: number) => {
-    const updatedItems = items.map(item =>
-      item.id === rowData.id ? { ...item, quantity } : item
-    );
-    setItems(updatedItems);
+    if (rowData.isNewRow) {
+      setNewRow({ ...newRow, quantity });
+    } else {
+      const updatedItems = items.map(item =>
+        item.id === rowData.id ? { ...item, quantity } : item
+      );
+      setItems(updatedItems);
+    }
   };
 
   const removeItem = (id?: number) => {
     if (id) {
-      const productToRemove = items.find(item => item.id === id);
       setItems(items.filter(item => item.id !== id));
-      if (productToRemove) {
-        toast.current?.show({ severity: 'warn', summary: 'Producto eliminado', detail: productToRemove.product_name, life: 3000 });
-      }
     }
   };
 
   const renderInputText = (rowData: MovementItem, field: keyof MovementItem) => {
-    if (field === 'batch_number' && type === 'purchase') {
+    if (rowData.isNewRow) {
       return (
         <InputText
-          value={rowData[field] as string || ''}
-          onChange={(e) => {
-            const updatedItems = items.map(item =>
-              item.id === rowData.id ? { ...item, [field]: e.target.value } : item
-            );
-            setItems(updatedItems);
-          }}
+          value={newRow[field] as string || ''}
+          onChange={(e) => handleInputChange(field, e.target.value)}
         />
       );
     }
     const value = rowData[field];
-    return value !== null && value !== undefined ? (
-      <>
-        <Tooltip target=".description-message" />
-        <div
-          className="description-message w-12rem overflow-hidden text-overflow-ellipsis white-space-nowrap"
-          data-pr-tooltip={String(value)}
-          data-pr-position="right"
-          data-pr-at="right+5 top"
-          data-pr-my="left center-2"
-          style={{ cursor: 'pointer' }}
-        >
-          {String(value)}
-        </div>
-      </>
-    ) : '';
+    return value !== null && value !== undefined ? String(value) : '';
   };
 
   const renderInputNumber = (rowData: MovementItem, field: keyof MovementItem): ReactNode => {
-    if (field === 'price' && type === 'sale') {
+    if (rowData.isNewRow) {
       return (
         <InputNumber
-          value={rowData[field] as number}
-          onValueChange={(e) => {
-            const updatedItems = items.map(item =>
-              item.id === rowData.id ? { ...item, [field]: e.value === null ? undefined : e.value } : item
-            );
-            setItems(updatedItems);
-          }}
-          mode="currency"
-          currency="ARS"
-          locale="es-AR"
+          value={newRow[field] as number}
+          onValueChange={(e) => handleInputChange(field, e.value)}
+          min={0}
         />
       );
     }
     const value = rowData[field];
-    return value !== null && value !== undefined ?
-      <div
-        className="flex align-items-center justify-content-center"
-      >
-        {String(value)}
-      </div> : '';
+    return value !== null && value !== undefined ? String(value) : '';
   };
 
   const renderCalendar = (rowData: MovementItem) => {
-    return (
-      <Calendar
-        value={rowData.expiration_date || null}
-        onChange={(e) => {
-          const updatedItems = items.map(item =>
-            item.id === rowData.id ? { ...item, expiration_date: e.value as Date } : item
-          );
-          setItems(updatedItems);
-        }}
-        dateFormat="dd/mm/yy"
-      />
-    );
+    if (rowData.isNewRow) {
+      return (
+        <Calendar
+          value={newRow.expiration_date || null}
+          onChange={(e) => handleInputChange('expiration_date', e.value)}
+          dateFormat="dd/mm/yy"
+        />
+      );
+    }
+    return rowData.expiration_date ? new Date(rowData.expiration_date).toLocaleDateString() : '';
   };
 
   const actionTemplate = (rowData: MovementItem) => {
+    if (rowData.isNewRow) {
+      return (
+        <Button
+          icon="pi pi-plus"
+          tooltip="Añadir producto"
+          tooltipOptions={{ position: 'top' }}
+          rounded
+          text
+          onClick={addNewRow} />
+      );
+    }
+
     return (
       <div className="flex">
         <Button
@@ -282,15 +245,19 @@ export default function NewMovementModal({
 
   const header = (
     <div className="flex flex-column gap-2 md:flex-row md:justify-content-between md:align-items-center">
-      <div className="flex align-items-center w-full md:w-auto">
-        <ProductSearcher
-          productsToChoose={productsToChoose}
-          onProductSelect={handleProductSelection}
-          selectedProductIds={items.map(item => item.product_id)}
-        />
+      <div className="flex align-items-center">
+        {/* <IconField iconPosition="left">
+          <InputIcon className="pi pi-search" />
+          <InputText
+            type="search"
+            placeholder="Buscar producto..."
+            value={searchTerm}
+            onChange={(e) => handleSearch(e.target.value)}
+          />
+        </IconField> */}
+        <ProductSearcher searchTerm={searchTerm} handleSearch={handleSearch} productsToChoose={productsToChoose} />
       </div>
 
-      {/* Rest of the header remains the same */}
       {type === 'purchase' && (
         <div className="flex align-items-center">
           <span className="mr-2">Proveedor:</span>
@@ -322,7 +289,6 @@ export default function NewMovementModal({
   );
 
   const handleSave = () => {
-    console.log(items)
     setSubmitted(true);
 
     if (items.length === 0) {
@@ -364,11 +330,7 @@ export default function NewMovementModal({
       <Button
         label="Guardar"
         icon="pi pi-check"
-        onClick={(e) => {
-          handleSave();
-          onHide();
-          resetForm();
-        }}
+        onClick={handleSave}
       />
     </div>
   );
@@ -389,7 +351,6 @@ export default function NewMovementModal({
         onHide();
         resetForm();
       }}>
-      <Toast ref={toast} />
       <div className="card">
         {loading ? (
           <SkeletonLoader rows={1} />
@@ -402,22 +363,21 @@ export default function NewMovementModal({
             )}
 
             <DataTable
-              value={items}
+              value={[...items, { ...newRow, isNewRow: true }]}
               dataKey="id"
-              className="mt-3 h-15rem"
+              className="mt-3"
               emptyMessage="No hay productos agregados"
               scrollable
             >
               <Column
                 field="product_id"
                 header="ID"
-                sortable
-                style={{ width: '80px' }}
+                body={(rowData) => renderInputText(rowData, 'product_id')}
               />
               <Column
                 field="product_name"
                 header="Producto"
-                sortable
+                body={(rowData) => renderInputText(rowData, 'product_name')}
               />
               <Column
                 field="description"
@@ -459,7 +419,7 @@ export default function NewMovementModal({
 
               <Column
                 body={actionTemplate}
-                style={{ width: '80px' }}
+                style={{ width: '150px' }}
                 header="Acciones"
               />
             </DataTable>
