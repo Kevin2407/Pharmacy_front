@@ -101,10 +101,9 @@ export default function NewMovementModal({
     added: { id: number; name: string; price: number; description: string }[],
     removed: { id: number; name: string; price: number; description: string }[]
   ) => {
-    console.log(added)
     if (added.length > 0) {
       const newItems = added.map(product => ({
-        id: Date.now() + product.id, // Generate a unique ID
+        id: Date.now() + product.id,
         product_id: product.id,
         product_name: product.name,
         description: product.description,
@@ -322,7 +321,6 @@ export default function NewMovementModal({
   );
 
   const handleSave = () => {
-    console.log(items)
     setSubmitted(true);
 
     if (items.length === 0) {
@@ -341,8 +339,16 @@ export default function NewMovementModal({
     }
 
     const additionalInfo = type === 'purchase'
-      ? { provider: selectedProvider }
-      : { paymentMethod: selectedPaymentMethod };
+      ? {
+        movementType: type,
+        provider: selectedProvider
+      }
+      : {
+        movementType: type,
+        paymentMethod: selectedPaymentMethod
+      };
+    console.log('additionalInfo', additionalInfo);
+    console.log('items', items);
 
     onSave(items, additionalInfo);
     onHide();
@@ -364,10 +370,8 @@ export default function NewMovementModal({
       <Button
         label="Guardar"
         icon="pi pi-check"
-        onClick={(e) => {
+        onClick={() => {
           handleSave();
-          onHide();
-          resetForm();
         }}
       />
     </div>

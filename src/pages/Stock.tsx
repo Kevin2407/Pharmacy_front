@@ -13,6 +13,7 @@ import { InputIcon } from 'primereact/inputicon';
 import { InputText } from 'primereact/inputtext';
 import SkeletonLoader from '../components/SkeletonLoader';
 import NewMovementModal from '../components/NewMovementModal';
+import MovementService from '../services/MovementService';
 
 
 interface StockProduct {
@@ -49,7 +50,7 @@ export default function ListaStock() {
   const [stockProduct, setStockProduct] = useState<StockProduct>(emptyProduct);
   const [productsToChoose, setProductsToChoose] = useState<StockProduct[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [submitted, setSubmitted] = useState<boolean>(false); //para validacion de formulario
+  const [submitted, setSubmitted] = useState<boolean>(false); 
   const [globalFilter, setGlobalFilter] = useState<string>('');
   const toast = useRef<Toast>(null);
   const dt = useRef<DataTable<StockProduct[]>>(null);
@@ -96,6 +97,35 @@ export default function ListaStock() {
     setSubmitted(true);
     console.log(items)
     console.log(additionalInfo)
+    const newMovementDTO = {
+      movementType: additionalInfo.movementType.toUpperCase(),
+      supplier: additionalInfo.supplier,
+      // paymentMethod: additionalInfo.paymentMethod,
+      lines: items.map((item: any) => ({
+        product: {
+          id: item.product_id
+        },
+        quantity: item.quantity,
+        bachNumber: item.bachNumber,
+        expirationDate: item.expirationDate,
+      })),
+    };
+
+    console.log(newMovementDTO);
+
+    MovementService.createWithLines(newMovementDTO)
+      .then((response: { data: StockProduct[] }) => {
+        toast.current?.show({ severity: 'success', summary: 'Exito', detail: 'Movimiento guardado', life: 3000 });
+        setVisiblePurchase(false);
+        setVisibleSale(false);
+        setVisibleAdjustment(false);
+        setVisibleReturn(false);
+      })
+      .catch((error: Error) => {
+        console.error('Error saving movement: ', error);
+        toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Error al guardar movimiento', life: 3000 });
+      });
+
   }
 
   const leftToolbarTemplate = () => {
@@ -193,7 +223,7 @@ export default function ListaStock() {
             onHide={() => setVisiblePurchase(false)}
             type="purchase"
             onSave={saveMovement}
-            providers={[{ id: 1, name: "pachi" }, { id: 2, name: "pepe" }]}
+            providers={[{ id: 1, name: "COFARAL" }, { id: 2, name: "Suizo s.a" }]}
             productsToChoose={productsToChoose}
           />
           <NewMovementModal
@@ -201,7 +231,7 @@ export default function ListaStock() {
             onHide={() => setVisibleSale(false)}
             type="sale"
             onSave={saveMovement}
-            paymentMethods={[{ id: 1, name: "pachi" }, { id: 2, name: "pepe" }]}
+            paymentMethods={[{ id: 1, name: "Efectivo" }, { id: 2, name: "Tarjeta" }]}
             productsToChoose={productsToChoose}
           />
           <NewMovementModal

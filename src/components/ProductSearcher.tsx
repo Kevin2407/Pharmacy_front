@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { OverlayPanel } from 'primereact/overlaypanel';
 import { Toast } from 'primereact/toast';
 import { Column } from 'primereact/column';
@@ -6,8 +6,6 @@ import { DataTable } from 'primereact/datatable';
 import { IconField } from 'primereact/iconfield';
 import { InputIcon } from 'primereact/inputicon';
 import { InputText } from 'primereact/inputtext';
-import { Button } from 'primereact/button';
-// import { ProductService } from './service/ProductService';
 
 interface Product {
   id: number;
@@ -17,7 +15,6 @@ interface Product {
 }
 
 export default function ProductSearcher({
-  handleSearch,
   productsToChoose,
   onProductSelect,
   selectedProductIds = []
@@ -34,27 +31,26 @@ export default function ProductSearcher({
     productsToChoose.filter(p => selectedProductIds.includes(p.id))
   );
 
-  // Update selectedProducts when selectedProductIds changes
   useEffect(() => {
     setSelectedProducts(productsToChoose.filter(p => selectedProductIds.includes(p.id)));
   }, [selectedProductIds, productsToChoose]);
 
   const handleSelectionChange = (e: { value: Product[] }) => {
-   console.log(e.value)
+
     const newSelection = e.value;
 
-    // Find products that were added in this selection change
     const addedProducts = newSelection.filter(
       product => !selectedProducts.some(p => p.id === product.id)
     );
 
-    // Find products that were removed in this selection change
     const removedProducts = selectedProducts.filter(
       product => !newSelection.some(p => p.id === product.id)
     );
 
     setSelectedProducts(newSelection);
     onProductSelect(newSelection, addedProducts, removedProducts);
+    setGlobalFilter('');
+    
   };
 
   const formatCurrency = (value: number): string => {
@@ -65,9 +61,6 @@ export default function ProductSearcher({
     return formatCurrency(rowData?.price);
   };
 
-  const handleApplySelection = () => {
-    op.current?.hide();
-  };
 
   return (
     <div className="card flex flex-column align-items-center gap-3">
@@ -77,8 +70,10 @@ export default function ProductSearcher({
         <InputText
           type="search"
           placeholder="Buscar producto..."
+          value={globalFilter}
           onInput={(e) => { const target = e.target as HTMLInputElement; setGlobalFilter(target.value); }}
           onFocus={(e) => op.current?.toggle(e)}
+          
           className="w-full"
         />
       </IconField>
