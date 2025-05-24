@@ -12,6 +12,7 @@ interface Product {
   name: string;
   price: number;
   description?: string;
+  stock?: number;
 }
 
 export default function ProductSearcher({
@@ -39,7 +40,7 @@ export default function ProductSearcher({
 
     const newSelection = e.value;
 
-    const addedProducts = newSelection.filter(
+    const addedProduct = newSelection.filter(
       product => !selectedProducts.some(p => p.id === product.id)
     );
 
@@ -48,7 +49,7 @@ export default function ProductSearcher({
     );
 
     setSelectedProducts(newSelection);
-    onProductSelect(newSelection, addedProducts, removedProducts);
+    onProductSelect(newSelection, addedProduct, removedProducts);
     setGlobalFilter('');
     
   };
@@ -98,6 +99,7 @@ export default function ProductSearcher({
           <Column field="name" header="Nombre" sortable style={{ minWidth: '12rem' }} />
           <Column field="price" header="Precio" body={priceBody} sortable style={{ minWidth: '8rem' }} />
           <Column field="description" header="Descripción" sortable style={{ display: 'none' }} />
+          <Column field="stock" header="Stock" sortable style={{ display: 'none' }} />
         </DataTable>
       </OverlayPanel>
     </div>

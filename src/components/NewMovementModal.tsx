@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode, useRef } from 'react';
+import { useState, useEffect, ReactNode, useRef, use } from 'react';
 import { Dialog } from 'primereact/dialog';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
@@ -27,6 +27,7 @@ interface MovementItem {
   description: string;
   quantity: number;
   price?: number;
+  stock: number;
   expiration_date?: Date | null;
   batch_number?: string;
 }
@@ -42,23 +43,27 @@ interface PaymentMethod {
 }
 
 interface NewMovementModalProps {
+  defaultItem: MovementItem | null;
   visible: boolean;
   onHide: () => void;
-  type: 'purchase' | 'sale' | 'adjustment' | 'return';
+  type: 'entry' | 'sale' | 'adjustment' | 'return';
   onSave: (items: MovementItem[], additionalInfo: any) => void;
   providers?: Provider[];
   paymentMethods?: PaymentMethod[];
-  productsToChoose?: { id: number; name: string; price: number }[];
+  productsToChoose?: { id: number; name: string; price: number; stock: number }[];
+  stockErrorLines?: string[];
 }
 
 export default function NewMovementModal({
+  defaultItem,
   visible,
   onHide,
   type,
   onSave,
   providers = [],
   paymentMethods = [],
-  productsToChoose = []
+  productsToChoose = [],
+  stockErrorLines = []
 }: NewMovementModalProps) {
   const [submitted, setSubmitted] = useState(false);
   const [items, setItems] = useState<MovementItem[]>([]);
@@ -88,6 +93,31 @@ export default function NewMovementModal({
     }
   }, [visible, type]);
 
+  useEffect(() => {
+    if (visible) {
+      setLoading(true);
+      setError(null);
+
+      if (defaultItem) {
+        setItems([defaultItem]); 
+      } else {
+        setItems([]); 
+      }
+
+      setTimeout(() => {
+        try {
+          setProducts([]);
+          setLoading(false);
+        } catch (err) {
+          setError('Error al cargar productos');
+          setLoading(false);
+        }
+      }, 500);
+    } else {
+      resetForm();
+    }
+  }, [visible, type, defaultItem]);
+
   const resetForm = () => {
     setItems([]);
     setSelectedProvider(null);
@@ -98,7 +128,9 @@ export default function NewMovementModal({
 
   const handleProductSelection = (
     allSelected: { id: number; name: string; price: number; description: string }[],
-    added: { id: number; name: string; price: number; description: string }[],
+    added: {
+      stock: number; id: number; name: string; price: number; description: string 
+}[],
     removed: { id: number; name: string; price: number; description: string }[]
   ) => {
     if (added.length > 0) {
@@ -108,9 +140,10 @@ export default function NewMovementModal({
         product_name: product.name,
         description: product.description,
         quantity: 1,
+        stock: product.stock,
         price: type === 'sale' ? product.price : undefined,
-        expiration_date: type === 'purchase' ? null : undefined,
-        batch_number: type === 'purchase' ? '' : undefined
+        expiration_date: type === 'entry' ? null : undefined,
+        batch_number: type === 'entry' ? '' : undefined
       }));
 
       setItems(prevItems => [...prevItems, ...newItems]);
@@ -157,10 +190,15 @@ export default function NewMovementModal({
   };
 
   const handleQuantityChange = (rowData: MovementItem, quantity: number) => {
-    const updatedItems = items.map(item =>
-      item.id === rowData.id ? { ...item, quantity } : item
-    );
-    setItems(updatedItems);
+    if((type === 'sale' || type === 'adjustment') && quantity > rowData.stock) {
+      setError(`No hay suficiente stock para ${rowData.product_name}`);
+    } else {
+      const updatedItems = items.map(item =>
+        item.id === rowData.id ? { ...item, quantity } : item
+      );
+      setItems(updatedItems);
+      if(error) setError(null);
+    }
   };
 
   const removeItem = (id?: number) => {
@@ -174,7 +212,7 @@ export default function NewMovementModal({
   };
 
   const renderInputText = (rowData: MovementItem, field: keyof MovementItem) => {
-    if (field === 'batch_number' && type === 'purchase') {
+    if (field === 'batch_number' && type === 'entry') {
       return (
         <InputText
           value={rowData[field] as string || ''}
@@ -289,8 +327,8 @@ export default function NewMovementModal({
         />
       </div>
 
-      {/* Rest of the header remains the same */}
-      {type === 'purchase' && (
+
+      {type === 'entry' && (
         <div className="flex align-items-center">
           <span className="mr-2">Proveedor:</span>
           <Dropdown
@@ -301,6 +339,11 @@ export default function NewMovementModal({
             placeholder="Seleccionar proveedor"
             className={`w-full md:w-14rem ${submitted && !selectedProvider ? 'p-invalid' : ''}`}
           />
+        </div>
+      )}
+      {type === 'sale' && (
+        <div className="flex justify-content-end mt-3">
+          <h3>Total: {items.reduce((sum, item) => sum + (item.quantity * (item.price || 0)), 0).toFixed(2)}</h3>
         </div>
       )}
 
@@ -323,12 +366,17 @@ export default function NewMovementModal({
   const handleSave = () => {
     setSubmitted(true);
 
+    if (stockErrorLines.length > 0) {
+      setError('No se puede guardar el movimiento, hay productos sin stock');
+      return;
+    }
+
     if (items.length === 0) {
       setError('Debe agregar al menos un producto');
       return;
     }
 
-    if (type === 'purchase' && !selectedProvider) {
+    if (type === 'entry' && !selectedProvider) {
       setError('Seleccione un proveedor');
       return;
     }
@@ -338,7 +386,7 @@ export default function NewMovementModal({
       return;
     }
 
-    const additionalInfo = type === 'purchase'
+    const additionalInfo = type === 'entry'
       ? {
         movementType: type,
         provider: selectedProvider
@@ -347,8 +395,6 @@ export default function NewMovementModal({
         movementType: type,
         paymentMethod: selectedPaymentMethod
       };
-    console.log('additionalInfo', additionalInfo);
-    console.log('items', items);
 
     onSave(items, additionalInfo);
     onHide();
@@ -379,7 +425,7 @@ export default function NewMovementModal({
 
   return (
     <Dialog
-      header={type === 'purchase' ? "Nueva entrada de medicamentos"
+      header={type === 'entry' ? "Nueva entrada de medicamentos"
         : type === 'sale' ? "Nueva Venta"
           : type === 'adjustment' ? "Ajuste de Stock (resta)"
             : "Devolución"}
@@ -404,7 +450,6 @@ export default function NewMovementModal({
             {error && (
               <div className="p-error mt-2 mb-2">{error}</div>
             )}
-
             <DataTable
               value={items}
               dataKey="id"
@@ -428,14 +473,14 @@ export default function NewMovementModal({
                 header="Descripción"
                 body={(rowData) => renderInputText(rowData, 'description')}
               />
-              <Column
-                field="quantity"
-                header="Cantidad"
-                body={(rowData) => renderInputNumber(rowData, 'quantity')}
-                style={{ width: '100px' }}
-              />
+                <Column
+                  field="stock"
+                  header="Stock actual"
+                  body={(rowData) => renderInputNumber(rowData, 'stock')}
+                  style={{ width: '100px' }}
+                />
 
-              {type === 'purchase' && (
+              {type === 'entry' && (
                 <Column
                   field="expiration_date"
                   header="Fecha Exp."
@@ -443,7 +488,7 @@ export default function NewMovementModal({
                   style={{ width: '150px' }}
                 />
               )}
-              {type === 'purchase' && (
+              {type === 'entry' && (
                 <Column
                   field="batch_number"
                   header="No. Lote"
@@ -461,6 +506,12 @@ export default function NewMovementModal({
                 />
               )}
 
+                <Column
+                  field="quantity"
+                  header="Cantidad"
+                  body={(rowData) => renderInputNumber(rowData, 'quantity')}
+                  style={{ width: '100px' }}
+                />
               <Column
                 body={actionTemplate}
                 style={{ width: '80px' }}
@@ -468,11 +519,6 @@ export default function NewMovementModal({
               />
             </DataTable>
 
-            {items.length > 0 && type === 'sale' && (
-              <div className="flex justify-content-end mt-3">
-                <h3>Total: {items.reduce((sum, item) => sum + (item.quantity * (item.price || 0)), 0).toFixed(2)}</h3>
-              </div>
-            )}
           </>
         )}
       </div>

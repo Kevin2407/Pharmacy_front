@@ -29,6 +29,18 @@ interface StockProduct {
   updated_by?: number;
 }
 
+interface MovementItem {
+  id?: number;
+  product_id: number;
+  product_name: string;
+  description: string;
+  quantity: number;
+  price?: number;
+  stock: number;
+  expiration_date?: Date | null;
+  batch_number?: string;
+}
+
 export default function ListaStock() {
 
   const emptyProduct: StockProduct = {
@@ -40,22 +52,25 @@ export default function ListaStock() {
   };
 
   const [stockProducts, setStockProducts] = useState<StockProduct[]>([]);
-  const [visiblePurchase, setVisiblePurchase] = useState<boolean>(false);
+  const [defaultItem, setDefaultItem] = useState<MovementItem | null>(null);
+  const [visibleEntry, setVisibleEntry] = useState<boolean>(false);
   const [visibleSale, setVisibleSale] = useState<boolean>(false);
   const [visibleAdjustment, setVisibleAdjustment] = useState<boolean>(false);
   const [visibleReturn, setVisibleReturn] = useState<boolean>(false);
-  const [visible, setVisible] = useState<boolean>(visiblePurchase||visibleSale||visibleAdjustment||visibleReturn);
+  const [visible, setVisible] = useState<boolean>(visibleEntry || visibleSale || visibleAdjustment || visibleReturn);
 
 
   const [stockProduct, setStockProduct] = useState<StockProduct>(emptyProduct);
   const [productsToChoose, setProductsToChoose] = useState<StockProduct[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [submitted, setSubmitted] = useState<boolean>(false); 
+  const [submitted, setSubmitted] = useState<boolean>(false);
   const [globalFilter, setGlobalFilter] = useState<string>('');
+  const [refreshKey, setRefreshKey] = useState<number>(0);
+  const [stockErrorLines, setStockErrorLines] = useState<any[]>([]);
   const toast = useRef<Toast>(null);
   const dt = useRef<DataTable<StockProduct[]>>(null);
 
-  useEffect((): void => {
+  const fetchProducts = () => {
     setLoading(true);
     ProductService.findAllStockProducts()
       .then((response: { data: StockProduct[] }) => {
@@ -67,16 +82,28 @@ export default function ListaStock() {
           price: product.price,
           stock: product.stock
         })));
-        setLoading(false);
-      }
-      ).catch((error: Error) => {
+        setTimeout(() => {
+          setLoading(false);
+        }, 1000);
+      })
+      .catch((error: Error) => {
         console.error('Error fetching Stock products: ', error);
-      }
-      );
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchProducts();
   }, []);
 
   useEffect(() => {
-    const isAnyModalOpen = visiblePurchase || visibleSale || visibleAdjustment || visibleReturn;
+    if (refreshKey > 0) {
+      fetchProducts();
+    }
+  }, [refreshKey]);
+
+  useEffect(() => {
+    const isAnyModalOpen = visibleEntry || visibleSale || visibleAdjustment || visibleReturn;
 
     if (isAnyModalOpen) {
       document.body.style.overflow = 'hidden';
@@ -87,7 +114,7 @@ export default function ListaStock() {
     return () => {
       document.body.style.overflow = 'auto';
     };
-  }, [visiblePurchase, visibleSale, visibleAdjustment, visibleReturn]);
+  }, [visibleEntry, visibleSale, visibleAdjustment, visibleReturn]);
 
   const exportCSV = () => {
     dt.current?.exportCSV();
@@ -95,8 +122,6 @@ export default function ListaStock() {
 
   const saveMovement = (items: any[], additionalInfo: any) => {
     setSubmitted(true);
-    console.log(items)
-    console.log(additionalInfo)
     const newMovementDTO = {
       movementType: additionalInfo.movementType.toUpperCase(),
       supplier: additionalInfo.supplier,
@@ -116,14 +141,33 @@ export default function ListaStock() {
     MovementService.createWithLines(newMovementDTO)
       .then((response: { data: StockProduct[] }) => {
         toast.current?.show({ severity: 'success', summary: 'Exito', detail: 'Movimiento guardado', life: 3000 });
-        setVisiblePurchase(false);
+        setVisibleEntry(false);
         setVisibleSale(false);
         setVisibleAdjustment(false);
         setVisibleReturn(false);
+        setRefreshKey(prevKey => prevKey + 1);
       })
-      .catch((error: Error) => {
-        console.error('Error saving movement: ', error);
-        toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Error al guardar movimiento', life: 3000 });
+      .catch((error: {
+        response: {
+          status: number; data: {
+            [x: string]: any; message: string
+          }, badLines: any[]
+        }
+      }) => {
+        const errorMessage = error.response.data.message;
+        console.log(error)
+        if (errorMessage === "INSUFFICIENT_STOCK" && error.response.status === 422) {
+          const badLines = error.response.data.badItems;
+          console.log(badLines)
+          const badLinesNames = badLines.map((line: any) => stockProducts.find((product: StockProduct) => product.id === line.product.id)?.name);
+          setStockErrorLines(badLines);
+          console.log(badLinesNames)
+          console.error('Stock Error: ', error);
+          toast.current?.show({ severity: 'error', summary: 'Error', detail: "Stock insuficiente", life: 3000 });
+        } else {
+          console.error('Error saving movement: ', error);
+          toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Error al guardar movimiento', life: 3000 });
+        }
       });
 
   }
@@ -145,7 +189,7 @@ export default function ListaStock() {
           onClick={() => {
             setStockProduct(emptyProduct);
             setSubmitted(false);
-            setVisiblePurchase(true);
+            setVisibleEntry(true);
           }} />
 
       </div>
@@ -158,6 +202,7 @@ export default function ListaStock() {
 
 
   const actionBodyTemplate = (rowData: StockProduct) => {
+    console.log(rowData)
     return (
       <React.Fragment>
         <Button
@@ -168,6 +213,15 @@ export default function ListaStock() {
           outlined
           className="mr-2"
           onClick={() => {
+            setDefaultItem({
+              id: rowData.id,
+              product_id: rowData.id!,
+              product_name: rowData.name,
+              description: rowData.description || '',
+              quantity: 1,
+              price: rowData.price,
+              stock: rowData.stock ?? 0
+            });
             setStockProduct(emptyProduct);
             setSubmitted(false);
             setVisibleReturn(true);
@@ -180,6 +234,15 @@ export default function ListaStock() {
           outlined
           severity="danger"
           onClick={() => {
+            setDefaultItem({
+              id: rowData.id,
+              product_id: rowData.id!,
+              product_name: rowData.name,
+              description: rowData.description || '',
+              quantity: 1,
+              price: rowData.price,
+              stock: rowData.stock || 0
+            });
             setStockProduct(emptyProduct);
             setSubmitted(false);
             setVisibleAdjustment(true);
@@ -206,10 +269,17 @@ export default function ListaStock() {
           <Toast ref={toast} />
           <div className="card">
             <Toolbar className="mb-4" left={leftToolbarTemplate} right={rightToolbarTemplate} />
-            <DataTable ref={dt} value={stockProducts}
-              dataKey="id" paginator rows={10} rowsPerPageOptions={[5, 10, 25]}
+            <DataTable
+              ref={dt}
+              value={stockProducts}
+              key={`stock-table-${refreshKey}`}
+              dataKey="id"
+              paginator
+              rows={10}
+              rowsPerPageOptions={[5, 10, 25]}
               paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-              currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} productos" globalFilter={globalFilter} header={header}
+              currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} productos"
+              globalFilter={globalFilter} header={header}
             >
               <Column field="id" header="ID" sortable></Column>
               <Column field="name" header="Nombre" sortable></Column>
@@ -219,12 +289,13 @@ export default function ListaStock() {
             </DataTable>
           </div>
           <NewMovementModal
-            visible={visiblePurchase}
-            onHide={() => setVisiblePurchase(false)}
-            type="purchase"
+            visible={visibleEntry}
+            onHide={() => setVisibleEntry(false)}
+            type="entry"
             onSave={saveMovement}
             providers={[{ id: 1, name: "COFARAL" }, { id: 2, name: "Suizo s.a" }]}
             productsToChoose={productsToChoose}
+            stockErrorLines={stockErrorLines}
           />
           <NewMovementModal
             visible={visibleSale}
@@ -233,20 +304,25 @@ export default function ListaStock() {
             onSave={saveMovement}
             paymentMethods={[{ id: 1, name: "Efectivo" }, { id: 2, name: "Tarjeta" }]}
             productsToChoose={productsToChoose}
+            stockErrorLines={stockErrorLines}
           />
           <NewMovementModal
+            defaultItem={defaultItem}
             visible={visibleAdjustment}
             onHide={() => setVisibleAdjustment(false)}
             type="adjustment"
             onSave={saveMovement}
             productsToChoose={productsToChoose}
+            stockErrorLines={stockErrorLines}
           />
           <NewMovementModal
+            defaultItem={defaultItem}
             visible={visibleReturn}
             onHide={() => setVisibleReturn(false)}
             type="return"
             onSave={saveMovement}
             productsToChoose={productsToChoose}
+            stockErrorLines={stockErrorLines}
           />
         </div>
       )}
